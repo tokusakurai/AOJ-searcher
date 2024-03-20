@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:latest
+    restart: always
+    container_name: ${MYSQL_HOST}
+    ports:
+      - "3306:3306"
+    networks:
+      - default
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  
+  backend:
+    container_name: ${APP_NAME}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE_NAME: ${MYSQL_DATABASE_NAME}
+
+  frontend:
+    container_name: ${FRONT_NAME}
+    depends_on:
+      - backend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+
+networks:
+  default:
