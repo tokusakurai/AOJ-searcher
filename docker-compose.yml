@@ -46,6 +46,8 @@ services:
     container_name: ${FRONT_NAME}
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
     build:
       context: ./frontend
       dockerfile: Dockerfile
