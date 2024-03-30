@@ -2,7 +2,7 @@ version: '3'
 
 services:
   db:
-    image: mysql:latest
+    image: mysql:8.0
     restart: always
     container_name: ${MYSQL_HOST}
     ports:
@@ -23,7 +23,7 @@ services:
       retries: 3
   
   backend:
-    container_name: ${APP_NAME}
+    container_name: ${BACKEND_NAME}
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -43,11 +43,11 @@ services:
       MYSQL_DATABASE_NAME: ${MYSQL_DATABASE_NAME}
 
   frontend:
-    container_name: ${FRONT_NAME}
+    container_name: ${FRONTEND_NAME}
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app/frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile

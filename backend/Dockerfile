@@ -1,7 +1,5 @@
-FROM golang:latest
-WORKDIR /app
-COPY go.mod ./
-COPY go.sum ./
+FROM golang:1.22
+WORKDIR /app/backend
+COPY . /app/backend
 RUN go mod download
-COPY ./ ./
 CMD ["sh", "-c", "go run src/init/main.go && go run src/server/main.go"]
