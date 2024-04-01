@@ -1,30 +1,58 @@
 import { useState } from 'react';
 
 function QueryForm({ onSearch }) {
-    const [query, setQuery] = useState('');
+    const [userId, setUserId] = useState('');
+    const [problemId, setProblemId] = useState('');
+    const [language, setLanguage] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSearch(query);
+        onSearch(userId, problemId, language);
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-            />
-            <button type="submit">Search</button>
-        </form>
+        <div>
+            <form onSubmit={handleSubmit}>
+                <input
+                    className='form-input'
+                    type='text'
+                    placeholder='User ID'
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                />
+                <span className='form-space'></span>
+                <input
+                    className='form-input'
+                    type='text'
+                    placeholder='Problem ID'
+                    value={problemId}
+                    onChange={(e) => setProblemId(e.target.value)}
+                />
+                <span className='form-space'></span>
+                <input
+                    className='form-input'
+                    type='text'
+                    placeholder='Language'
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                />
+                <span className='form-space'></span>
+                <button
+                    className='form-submit'
+                    type='submit'
+                >Search</button>
+            </form>
+        </div>
     );
 }
 
-function FindSubmissions(problemId) {
+function FindSubmissions(userId, problemId, language) {
     const url = 'http://localhost:8000/submissions';
-    const dataToSend = { UserId: 'tokusakurai', ProblemId: problemId, Language: 'C++17' };
-
-    console.log(dataToSend);
+    const dataToSend = {
+        UserId: userId,
+        ProblemId: problemId,
+        Language: language
+    };
 
     fetch(url, {
         method: 'POST',

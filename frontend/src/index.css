@@ -2,6 +2,22 @@
     box-sizing: border-box;
 }
 
+.form-input {
+    font-size: 15px;
+    height: 30px;
+    width: 200px;
+}
+
+.form-space {
+    margin: 0px 10px;
+}
+
+.form-submit {
+    font-size: 15px;
+    height: 30px;
+    width: 70px;
+}
+
 body {
     font-family: sans-serif;
     margin: 20px;
