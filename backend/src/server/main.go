@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"text/template"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -33,19 +35,24 @@ type Submission struct {
 func getSubmissionFromMap(mapSubmission map[string]interface{}) Submission {
 	var submission Submission
 
+    jstLocation, err := time.LoadLocation("Asia/Tokyo")
+    if err != nil {
+        log.Print("Error UTC to JTC: ", err)
+    }
+
 	submission.JudgeId = int(mapSubmission["judgeId"].(float64))
 	submission.UserId = mapSubmission["userId"].(string)
 	submission.ProblemId = mapSubmission["problemId"].(string)
 	submission.Language = mapSubmission["language"].(string)
 	submission.Version = mapSubmission["version"].(string)
-	submission.SubmissionTime = time.Unix(int64(mapSubmission["submissionDate"].(float64))/1000, 0).Format("2006-01-02 15:04:05")
+	submission.SubmissionTime = time.Unix(int64(mapSubmission["submissionDate"].(float64))/1000, 0).In(jstLocation).Format("2006-01-02 15:04:05")
 	submission.CpuTime = int(mapSubmission["cpuTime"].(float64))
 	submission.Memory = int(mapSubmission["memory"].(float64))
 
 	return submission
 }
 
-func insertSubmission(db *sql.DB, submission Submission) {
+func insertSubmission(db *sql.DB, submission Submission) (sql.Result, error) {
 	insertSubmissionQuery :=
 		`INSERT INTO SUBMISSIONS(
 			JUDGEID,
@@ -62,7 +69,7 @@ func insertSubmission(db *sql.DB, submission Submission) {
 		)
 		ON DUPLICATE KEY UPDATE JUDGEID = JUDGEID`
 
-	_, err := db.Exec(
+	return db.Exec(
 		insertSubmissionQuery,
 		submission.JudgeId,
 		submission.UserId,
@@ -73,10 +80,43 @@ func insertSubmission(db *sql.DB, submission Submission) {
 		submission.CpuTime,
 		submission.Memory,
 	)
+}
+
+func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
+	searchSubmissionQuery :=
+		`SELECT
+			*
+		FROM SUBMISSIONS
+		WHERE
+			1=1
+			{{if .UserId}} AND USERID = ? {{end}}
+			{{if .ProblemId}} AND PROBLEMID = ? {{end}}
+			{{if .Language}} AND LANGUAGE = ? {{end}}
+		ORDER BY
+			SUBMISSIONTIME DESC`
+
+	var buf bytes.Buffer
+	err := template.Must(template.New("tmpl").Parse(searchSubmissionQuery)).Execute(&buf, status)
 
 	if err != nil {
-		log.Fatal("Error inserting submission data: ", err)
+		log.Print("Error text template: ", err)
 	}
+
+	var args []interface{}
+	if status.UserId != "" {
+		args = append(args, status.UserId)
+	}
+	if status.ProblemId != "" {
+		args = append(args, status.ProblemId)
+	}
+	if status.Language != "" {
+		args = append(args, status.Language)
+	}
+
+	return db.Query(
+		buf.String(),
+		args...,
+	)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -101,54 +141,80 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatal("Error opening database: ", err)
+		log.Print("Error opening database: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	defer db.Close()
 
 	_, err = db.Exec(fmt.Sprintf("USE %s", dbname))
 	if err != nil {
-		log.Fatal("Error using database: ", err)
+		log.Print("Error using database: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	var status Status
 	err = json.NewDecoder(r.Body).Decode(&status)
 	if err != nil {
-		log.Fatal("Error decoding json: ", err)
+		log.Print("Error decoding json: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	url := "https://judgeapi.u-aizu.ac.jp/solutions/problems/" + status.ProblemId
+	url := "https://judgeapi.u-aizu.ac.jp/solutions/"
+	if status.UserId != "" {
+		url += "users/" + status.UserId + "/"
+	}
+	if status.ProblemId != "" {
+		url += "problems/" + status.ProblemId + "/"
+	}
+	if (status.UserId == "" || status.ProblemId == "") && status.Language != "" {
+		url += "lang/" + status.Language + "/"
+	}
+    url += "?page=0&size=1000"
+
+	log.Print(url)
 
 	response, err := http.Get(url)
 	if err != nil {
-		log.Fatal("Error http request: ", err)
+		log.Print("Error http request: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal("Error reading response body: ", err)
+		log.Print("Error reading response body: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	var data []map[string]interface{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		log.Fatal("Error decoding json: ", err)
+		log.Print("Error decoding json: ", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	for _, submission := range data {
-		insertSubmission(db, getSubmissionFromMap(submission))
+		_, err = insertSubmission(db, getSubmissionFromMap(submission))
+		if err != nil {
+			log.Print("Error using database: ", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
-	rows, err := db.Query(`SELECT * FROM SUBMISSIONS`)
+	rows, err := searchSubmission(db, status)
 	if err != nil {
-		log.Fatal("Error selecting: ", err)
-	}
-	defer rows.Close()
-
-	if err != nil {
-		fmt.Println("Error:", err)
+		log.Print("Error selecting: ", err)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	defer rows.Close()
 
 	var submissions []Submission
 
