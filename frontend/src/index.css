@@ -2,6 +2,11 @@
     box-sizing: border-box;
 }
 
+.margin-box {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
 .form-input {
     font-size: 15px;
     height: 30px;
