@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Route, Routes, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
-import { Button, Form, InputGroup, Navbar } from 'react-bootstrap';
+import { Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 
 function HeadNavigator() {
@@ -131,40 +131,40 @@ function FindSubmissions() {
     }
 
     return (
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Submission Time</th>
-                        <th>Problem ID</th>
-                        <th>User ID</th>
-                        <th>Language</th>
-                        <th>CPU Time</th>
-                        <th>Memory</th>
-                        <th>Submission ID</th>
+        <Table>
+            <thead>
+                <tr>
+                    <th style={{ textAlign: 'center' }}>#</th>
+                    <th style={{ textAlign: 'center' }}>Submission Time</th>
+                    <th style={{ textAlign: 'center' }}>Problem ID</th>
+                    <th style={{ textAlign: 'center' }}>User ID</th>
+                    <th style={{ textAlign: 'center' }}>Language</th>
+                    <th style={{ textAlign: 'center' }}>CPU Time</th>
+                    <th style={{ textAlign: 'center' }}>Memory</th>
+                    <th style={{ textAlign: 'center' }}>Link</th>
+                </tr>
+            </thead>
+            <tbody>
+                {submissions.map((item, index) => (
+                    <tr key={index}>
+                        <td style={{ textAlign: 'right' }}>{index + 1}</td>
+                        <td>{item.SubmissionTime}</td>
+                        <td>{item.ProblemId}</td>
+                        <td>{item.UserId}</td>
+                        <td>{item.Language}</td>
+                        <td style={{ textAlign: 'right' }}>{item.CpuTime * 10} ms</td>
+                        <td style={{ textAlign: 'right' }}>{item.Memory} KB</td>
+                        <td style={{ textAlign: 'right' }}>{item.JudgeId}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    {submissions.map((item, index) => (
-                        <tr key={index}>
-                            <td>{item.SubmissionTime}</td>
-                            <td>{item.ProblemId}</td>
-                            <td>{item.UserId}</td>
-                            <td>{item.Language}</td>
-                            <td>{item.CpuTime}</td>
-                            <td>{item.Memory}</td>
-                            <td>{item.JudgeId}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                ))}
+            </tbody>
+        </Table>
     );
 }
 
 function Default() {
     return (
-        <div>
+        <div style={{ position:'sticky', top : 0 }}>
             <HeadNavigator />
             <QueryForm
                 defaultUserId={''}
@@ -179,18 +179,22 @@ function Result() {
     const { userId, problemId, language } = useParams();
     return (
         <div>
-            <HeadNavigator />
-            <QueryForm
-                defaultUserId={userId === '*' ? '' : userId}
-                defaultProblemId={problemId === '*' ? '' : problemId}
-                defaultLanguage={language === '*' ? '' : language}
-            />
-            <FindSubmissions />
+            <div style={{ position:'sticky', top : 0 }}>
+                <HeadNavigator />
+                <QueryForm
+                    defaultUserId={userId === '*' ? '' : userId}
+                    defaultProblemId={problemId === '*' ? '' : problemId}
+                    defaultLanguage={language === '*' ? '' : language}
+                />
+            </div>
+            <div>
+                <FindSubmissions />
+            </div>
         </div>
     );
 }
 
-export default function MyApp() {
+export default function App() {
     return (
         <BrowserRouter>
             <Routes>
