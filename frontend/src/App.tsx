@@ -1,8 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Route, Routes, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Route, Routes, Navigate, useNavigate, useParams, NavigateFunction } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
+
+interface Status {
+    UserId: string;
+    ProblemId: string;
+    Language: string;
+}
+
+interface Submission {
+    JudgeId: number;
+    UserId: string;
+    ProblemId: string;
+    Language: string;
+    Version: string;
+    SubmissionTime: string;
+    CpuTime: number;
+    Memory: number;
+}
 
 function HeadNavigator() {
     return (
@@ -12,35 +29,39 @@ function HeadNavigator() {
     );
 }
 
-function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }) {
-    const [userId, setUserId] = useState(defaultUserId);
-    const [problemId, setProblemId] = useState(defaultProblemId);
-    const [language, setLanguage] = useState(defaultLanguage);
-    const navigate = useNavigate();
+function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
+    defaultUserId: string;
+    defaultProblemId: string;
+    defaultLanguage: string;
+}) {
+    const [userId, setUserId] = useState<string>(defaultUserId);
+    const [problemId, setProblemId] = useState<string>(defaultProblemId);
+    const [language, setLanguage] = useState<string>(defaultLanguage);
+    const navigate: NavigateFunction = useNavigate();
 
-    function handleSubmit(e) {
+    function handleSubmit(e: any) {
         e.preventDefault();
-        var url = '';
+        var url: string = '';
         url += '/user/' + (userId ? userId : '*');
         url += '/problem/' + (problemId ? problemId : '*');
         url += '/language/' + (language ? language : '*');
         navigate(url);
     }
 
-    function handleKeyPress(e) {
+    function handleKeyPress(e: any) {
         if (e.key === 'Enter') {
             handleSubmit(e);
         }
     }
 
-    function handleReset(e) {
+    function handleReset(e: any) {
         e.preventDefault();
         navigate('/');
     }
 
     return (
         <Navbar className='bg-body-tertiary'>
-            <Form inline className='margin-box'>
+            <Form className='form-inline margin-box'>
                 <InputGroup>
                     <Form.Control
                         type='text'
@@ -51,7 +72,7 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }) {
                     />
                 </InputGroup>
             </Form>
-            <Form inline className='margin-box'>
+            <Form className='form-inline margin-box'>
                 <InputGroup>
                     <Form.Control
                         type='text'
@@ -62,7 +83,7 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }) {
                     />
                 </InputGroup>
             </Form>
-            <Form inline className='margin-box'>
+            <Form className='form-inline margin-box'>
                 <InputGroup>
                     <Form.Control
                         type='text'
@@ -92,16 +113,20 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }) {
 }
 
 function FindSubmissions() {
-    const { userId, problemId, language } = useParams();
-    const [submissions, setSubmissions] = useState([]);
+    const { userId, problemId, language } = useParams<{
+        userId: string;
+        problemId: string;
+        language: string
+    }>();
+    const [submissions, setSubmissions] = useState<Submission[]>([]);
 
     useEffect(
         () => {
-            const url = 'http://localhost:8000/submissions';
-            const dataToSend = {
-                UserId: userId === '*' ? '' : userId,
-                ProblemId: problemId === '*' ? '' : problemId,
-                Language: language === '*' ? '' : language
+            const url: string = 'http://localhost:8000/submissions';
+            const dataToSend: Status = {
+                UserId: userId === undefined ? '*' : userId === '*' ? '' : userId,
+                ProblemId: problemId === undefined ? '' : problemId === '*' ? '' : problemId,
+                Language: language === undefined ? '' : language === '*' ? '' : language
             };
 
             console.log(dataToSend);
@@ -145,7 +170,7 @@ function FindSubmissions() {
                 </tr>
             </thead>
             <tbody>
-                {submissions.map((item, index) => (
+                {submissions.map((item: Submission, index: number) => (
                     <tr key={index}>
                         <td style={{ textAlign: 'right' }}>{index + 1}</td>
                         <td>{item.SubmissionTime}</td>
@@ -164,7 +189,7 @@ function FindSubmissions() {
 
 function Default() {
     return (
-        <div style={{ position:'sticky', top : 0 }}>
+        <div style={{ position: 'sticky', top: 0 }}>
             <HeadNavigator />
             <QueryForm
                 defaultUserId={''}
@@ -176,15 +201,19 @@ function Default() {
 }
 
 function Result() {
-    const { userId, problemId, language } = useParams();
+    const { userId, problemId, language } = useParams<{
+        userId: string;
+        problemId: string;
+        language: string
+    }>();
     return (
         <div>
-            <div style={{ position:'sticky', top : 0 }}>
+            <div style={{ position: 'sticky', top: 0 }}>
                 <HeadNavigator />
                 <QueryForm
-                    defaultUserId={userId === '*' ? '' : userId}
-                    defaultProblemId={problemId === '*' ? '' : problemId}
-                    defaultLanguage={language === '*' ? '' : language}
+                    defaultUserId={userId === undefined ? '' : userId === '*' ? '' : userId}
+                    defaultProblemId={problemId === undefined ? '' : problemId === '*' ? '' : problemId}
+                    defaultLanguage={language === undefined ? '' : language === '*' ? '' : language}
                 />
             </div>
             <div>
@@ -199,7 +228,7 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route
-                    exact path=''
+                    path=''
                     element={<Default />}
                 ></Route>
                 <Route
