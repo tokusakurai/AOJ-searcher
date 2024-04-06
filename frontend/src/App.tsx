@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Route, Routes, Navigate, useNavigate, useParams, NavigateFunction } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
-import { Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
+import { Badge, Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 
 interface Status {
@@ -156,17 +156,18 @@ function FindSubmissions() {
     }
 
     return (
-        <Table>
+        <Table striped bordered hover responsive className='table fixed'>
             <thead>
                 <tr>
-                    <th style={{ textAlign: 'center' }}>#</th>
-                    <th style={{ textAlign: 'center' }}>Submission Time</th>
-                    <th style={{ textAlign: 'center' }}>Problem ID</th>
-                    <th style={{ textAlign: 'center' }}>User ID</th>
-                    <th style={{ textAlign: 'center' }}>Language</th>
-                    <th style={{ textAlign: 'center' }}>CPU Time</th>
-                    <th style={{ textAlign: 'center' }}>Memory</th>
-                    <th style={{ textAlign: 'center' }}>Link</th>
+                    <th style={{ width: '20px', textAlign: 'center' }}>#</th>
+                    <th style={{ width: '170px', textAlign: 'center' }}>Submission Time</th>
+                    <th style={{ width: '120px', textAlign: 'center' }}>Problem ID</th>
+                    <th style={{ width: '150px', textAlign: 'center' }}>User ID</th>
+                    <th style={{ width: '120px', textAlign: 'center' }}>Language</th>
+                    <th style={{ width: '20px', textAlign: 'center' }}>Verdict</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>CPU Time</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>Memory</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>Link</th>
                 </tr>
             </thead>
             <tbody>
@@ -174,12 +175,25 @@ function FindSubmissions() {
                     <tr key={index}>
                         <td style={{ textAlign: 'right' }}>{index + 1}</td>
                         <td>{item.SubmissionTime}</td>
-                        <td>{item.ProblemId}</td>
-                        <td>{item.UserId}</td>
+                        <td><a
+                            href={'https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=' + item.ProblemId}
+                            target='_blank'
+                            style={{ textDecoration: 'none' }}
+                        >{item.ProblemId}</a></td>
+                        <td><a
+                            href={'https://judge.u-aizu.ac.jp/onlinejudge/user.jsp?id=' + item.UserId}
+                            target='_blank'
+                            style={{ textDecoration: 'none' }}
+                        >{item.UserId}</a></td>
                         <td>{item.Language}</td>
+                        <td style={{ textAlign: 'center' }}><Badge bg='success'>AC</Badge></td>
                         <td style={{ textAlign: 'right' }}>{item.CpuTime * 10} ms</td>
                         <td style={{ textAlign: 'right' }}>{item.Memory} KB</td>
-                        <td style={{ textAlign: 'right' }}>{item.JudgeId}</td>
+                        <td style={{ textAlign: 'center' }}><a
+                            href={'https://judge.u-aizu.ac.jp/onlinejudge/review.jsp?rid=' + item.JudgeId}
+                            target='_blank'
+                            style={{ textDecoration: 'none' }}
+                        >{'#' + item.JudgeId}</a></td>
                     </tr>
                 ))}
             </tbody>
