@@ -8,6 +8,8 @@ interface Status {
     UserId: string;
     ProblemId: string;
     Language: string;
+    PageSize: number;
+    PageId: number;
 }
 
 interface Submission {
@@ -45,6 +47,8 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
         url += '/user/' + (userId ? userId : '*');
         url += '/problem/' + (problemId ? problemId : '*');
         url += '/language/' + (language ? language : '*');
+        url += '/page/0';
+        url += '/size/100';
         navigate(url);
     }
 
@@ -113,10 +117,12 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
 }
 
 function FindSubmissions() {
-    const { userId, problemId, language } = useParams<{
+    const { userId, problemId, language, pageSize, pageId } = useParams<{
         userId: string;
         problemId: string;
-        language: string
+        language: string;
+        pageSize: string;
+        pageId: string;
     }>();
     const [submissions, setSubmissions] = useState<Submission[]>([]);
 
@@ -126,7 +132,9 @@ function FindSubmissions() {
             const dataToSend: Status = {
                 UserId: userId === undefined ? '*' : userId === '*' ? '' : userId,
                 ProblemId: problemId === undefined ? '' : problemId === '*' ? '' : problemId,
-                Language: language === undefined ? '' : language === '*' ? '' : language
+                Language: language === undefined ? '' : language === '*' ? '' : language,
+                PageSize: pageSize === undefined ? 0 : Number(pageSize),
+                PageId: pageId === undefined ? 0 : Number(pageId),
             };
 
             console.log(dataToSend);
@@ -173,7 +181,7 @@ function FindSubmissions() {
             <tbody>
                 {submissions.map((item: Submission, index: number) => (
                     <tr key={index}>
-                        <td style={{ textAlign: 'right' }}>{index + 1}</td>
+                        <td style={{ textAlign: 'right' }}>{index + 1 + Number(pageSize) * Number(pageId)}</td>
                         <td>{item.SubmissionTime}</td>
                         <td><a
                             href={'https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=' + item.ProblemId}
@@ -246,7 +254,7 @@ export default function App() {
                     element={<Default />}
                 ></Route>
                 <Route
-                    path='user/:userId/problem/:problemId/language/:language'
+                    path='user/:userId/problem/:problemId/language/:language/page/:pageId/size/:pageSize'
                     element={<Result />}
                 ></Route>
                 <Route

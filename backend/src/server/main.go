@@ -9,6 +9,7 @@ import (
     "log"
     "net/http"
     "os"
+    "strconv"
     "text/template"
     "time"
 
@@ -19,6 +20,8 @@ type Status struct {
     UserId    string
     ProblemId string
     Language  string
+    PageSize  int
+    PageId    int
 }
 
 type Submission struct {
@@ -85,15 +88,32 @@ func insertSubmission(db *sql.DB, submission Submission) (sql.Result, error) {
 func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
     searchSubmissionQuery :=
         `SELECT
-            *
-        FROM SUBMISSIONS
+            JUDGEID,
+            USERID,
+            PROBLEMID,
+            LANGUAGE,
+            VERSION,
+            SUBMISSIONTIME,
+            CPUTIME,
+            MEMORY
+        FROM(
+            SELECT
+                *,
+                RANK() OVER(
+                    ORDER BY
+                        SUBMISSIONTIME DESC,
+                        USERID ASC,
+                        PROBLEMID ASC
+                ) AS RNK
+            FROM SUBMISSIONS
+        ) AS RANKED_SUBMISSIONS
         WHERE
-            1=1
+            RNK BETWEEN ? AND ?
             {{if .UserId}} AND USERID = ? {{end}}
             {{if .ProblemId}} AND PROBLEMID = ? {{end}}
             {{if .Language}} AND LANGUAGE = ? {{end}}
         ORDER BY
-            SUBMISSIONTIME DESC`
+            RNK ASC`
 
     var buf bytes.Buffer
     err := template.Must(template.New("tmpl").Parse(searchSubmissionQuery)).Execute(&buf, status)
@@ -103,6 +123,8 @@ func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
     }
 
     var args []interface{}
+    args = append(args, status.PageSize*status.PageId+1)
+    args = append(args, status.PageSize*(status.PageId+1))
     if status.UserId != "" {
         args = append(args, status.UserId)
     }
@@ -172,7 +194,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
     if (status.UserId == "" || status.ProblemId == "") && status.Language != "" {
         url += "lang/" + status.Language + "/"
     }
-    url += "?page=0&size=1000"
+    url += "?page=" + strconv.Itoa(status.PageId)
+    url += "&size=" + strconv.Itoa(status.PageSize)
 
     log.Print(url)
 
