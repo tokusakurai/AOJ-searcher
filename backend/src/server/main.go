@@ -96,22 +96,24 @@ func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
             SUBMISSIONTIME,
             CPUTIME,
             MEMORY
-        FROM(
+        FROM (
             SELECT
                 *,
-                RANK() OVER(
+                RANK() OVER (
                     ORDER BY
                         SUBMISSIONTIME DESC,
                         USERID ASC,
                         PROBLEMID ASC
                 ) AS RNK
             FROM SUBMISSIONS
+            WHERE
+                1 = 1
+                {{if .UserId}} AND USERID = ? {{end}}
+                {{if .ProblemId}} AND PROBLEMID = ? {{end}}
+                {{if .Language}} AND LANGUAGE = ? {{end}}
         ) AS RANKED_SUBMISSIONS
         WHERE
             RNK BETWEEN ? AND ?
-            {{if .UserId}} AND USERID = ? {{end}}
-            {{if .ProblemId}} AND PROBLEMID = ? {{end}}
-            {{if .Language}} AND LANGUAGE = ? {{end}}
         ORDER BY
             RNK ASC`
 
@@ -123,8 +125,6 @@ func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
     }
 
     var args []interface{}
-    args = append(args, status.PageSize*status.PageId+1)
-    args = append(args, status.PageSize*(status.PageId+1))
     if status.UserId != "" {
         args = append(args, status.UserId)
     }
@@ -134,6 +134,8 @@ func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
     if status.Language != "" {
         args = append(args, status.Language)
     }
+    args = append(args, status.PageSize*status.PageId+1)
+    args = append(args, status.PageSize*(status.PageId+1))
 
     return db.Query(
         buf.String(),

@@ -156,7 +156,7 @@ function FindSubmissions() {
             }).catch(error => {
                 console.error('Error:', error);
             });
-        }, [userId, problemId, language]
+        }, [userId, problemId, language, pageSize, pageId]
     );
 
     if (!submissions) {
