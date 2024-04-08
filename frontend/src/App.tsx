@@ -186,11 +186,13 @@ function FindSubmissions() {
                         <td><a
                             href={'https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=' + item.ProblemId}
                             target='_blank'
+                            rel='noreferrer noopener'
                             style={{ textDecoration: 'none' }}
                         >{item.ProblemId}</a></td>
                         <td><a
                             href={'https://judge.u-aizu.ac.jp/onlinejudge/user.jsp?id=' + item.UserId}
                             target='_blank'
+                            rel='noreferrer noopener'
                             style={{ textDecoration: 'none' }}
                         >{item.UserId}</a></td>
                         <td>{item.Language}</td>
@@ -200,6 +202,7 @@ function FindSubmissions() {
                         <td style={{ textAlign: 'center' }}><a
                             href={'https://judge.u-aizu.ac.jp/onlinejudge/review.jsp?rid=' + item.JudgeId}
                             target='_blank'
+                            rel='noreferrer noopener'
                             style={{ textDecoration: 'none' }}
                         >{'#' + item.JudgeId}</a></td>
                     </tr>
