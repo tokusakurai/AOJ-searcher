@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Route, Routes, Navigate, useNavigate, useParams, NavigateFunction } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { Badge, Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
@@ -39,16 +39,18 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
     const [userId, setUserId] = useState<string>(defaultUserId);
     const [problemId, setProblemId] = useState<string>(defaultProblemId);
     const [language, setLanguage] = useState<string>(defaultLanguage);
-    const navigate: NavigateFunction = useNavigate();
+    const navigate = useNavigate();
 
     function handleSubmit(e: any) {
         e.preventDefault();
-        var url: string = '';
-        url += '/user/' + (userId ? userId : '*');
-        url += '/problem/' + (problemId ? problemId : '*');
-        url += '/language/' + (language ? language : '*');
-        url += '/page/0';
-        url += '/size/100';
+
+        let url: string = '/submissions?';
+        url += 'user=' + (userId ? userId : '*');
+        url += '&problem=' + (problemId ? problemId : '*');
+        url += '&language=' + (language ? language : '*');
+        url += '&page=0';
+        url += '&size=100';
+        console.log(url);
         navigate(url);
     }
 
@@ -117,24 +119,26 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
 }
 
 function FindSubmissions() {
-    const { userId, problemId, language, pageSize, pageId } = useParams<{
-        userId: string;
-        problemId: string;
-        language: string;
-        pageSize: string;
-        pageId: string;
-    }>();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+
+    const userId = searchParams.get('user');
+    const problemId = searchParams.get('problem');
+    const language = searchParams.get('language');
+    const pageSize = searchParams.get('size');
+    const pageId = searchParams.get('page');
+
     const [submissions, setSubmissions] = useState<Submission[]>([]);
 
     useEffect(
         () => {
             const url: string = 'http://localhost:8000/submissions';
             const dataToSend: Status = {
-                UserId: userId === undefined ? '*' : userId === '*' ? '' : userId,
-                ProblemId: problemId === undefined ? '' : problemId === '*' ? '' : problemId,
-                Language: language === undefined ? '' : language === '*' ? '' : language,
-                PageSize: pageSize === undefined ? 0 : Number(pageSize),
-                PageId: pageId === undefined ? 0 : Number(pageId),
+                UserId: userId === null ? '*' : userId === '*' ? '' : userId,
+                ProblemId: problemId === null ? '' : problemId === '*' ? '' : problemId,
+                Language: language === null ? '' : language === '*' ? '' : language,
+                PageSize: pageSize === null ? 100 : Number(pageSize),
+                PageId: pageId === null ? 0 : Number(pageId),
             };
 
             console.log(dataToSend);
@@ -226,19 +230,21 @@ function Default() {
 }
 
 function Result() {
-    const { userId, problemId, language } = useParams<{
-        userId: string;
-        problemId: string;
-        language: string
-    }>();
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+
+    const userId = searchParams.get('user');
+    const problemId = searchParams.get('problem');
+    const language = searchParams.get('language');
+
     return (
         <div>
             <div style={{ position: 'sticky', top: 0 }}>
                 <HeadNavigator />
                 <QueryForm
-                    defaultUserId={userId === undefined ? '' : userId === '*' ? '' : userId}
-                    defaultProblemId={problemId === undefined ? '' : problemId === '*' ? '' : problemId}
-                    defaultLanguage={language === undefined ? '' : language === '*' ? '' : language}
+                    defaultUserId={userId === null ? '' : userId === '*' ? '' : userId}
+                    defaultProblemId={problemId === null ? '' : problemId === '*' ? '' : problemId}
+                    defaultLanguage={language === null ? '' : language === '*' ? '' : language}
                 />
             </div>
             <div>
@@ -253,11 +259,11 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route
-                    path=''
+                    path='/'
                     element={<Default />}
                 ></Route>
                 <Route
-                    path='user/:userId/problem/:problemId/language/:language/page/:pageId/size/:pageSize'
+                    path='/submissions/*'
                     element={<Result />}
                 ></Route>
                 <Route
