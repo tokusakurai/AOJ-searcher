@@ -23,6 +23,7 @@ interface Submission {
     SubmissionTime: string;
     CpuTime: number;
     Memory: number;
+    Rank: number;
 }
 
 function HeadNavigator() {
@@ -272,7 +273,7 @@ function FindSubmissions() {
             <tbody>
                 {submissions.map((item: Submission, index: number) => (
                     <tr key={index}>
-                        <td style={{ textAlign: 'right' }}>{index + 1 + Number(pageSize) * Number(pageId)}</td>
+                        <td style={{ textAlign: 'right' }}>{item.Rank}</td>
                         <td>{item.SubmissionTime}</td>
                         <td><a
                             href={'https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=' + item.ProblemId}

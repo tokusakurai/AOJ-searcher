@@ -33,6 +33,7 @@ type Submission struct {
     SubmissionTime string
     CpuTime        int
     Memory         int
+    Rank           int
 }
 
 func getSubmissionFromMap(mapSubmission map[string]interface{}) Submission {
@@ -88,14 +89,7 @@ func insertSubmission(db *sql.DB, submission Submission) (sql.Result, error) {
 func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
     searchSubmissionQuery :=
         `SELECT
-            JUDGEID,
-            USERID,
-            PROBLEMID,
-            LANGUAGE,
-            VERSION,
-            SUBMISSIONTIME,
-            CPUTIME,
-            MEMORY
+            *
         FROM (
             SELECT
                 *,
@@ -255,6 +249,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
             &submission.SubmissionTime,
             &submission.CpuTime,
             &submission.Memory,
+            &submission.Rank,
         )
 
         submissions = append(submissions, submission)
