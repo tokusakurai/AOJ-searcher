@@ -34,25 +34,30 @@ function HeadNavigator() {
     );
 }
 
-function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
+function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPageSize, defaultPageId }: {
     defaultUserId: string;
     defaultProblemId: string;
     defaultLanguage: string;
+    defaultPageSize: number;
+    defaultPageId: number;
 }) {
     const [userId, setUserId] = useState<string>(defaultUserId);
     const [problemId, setProblemId] = useState<string>(defaultProblemId);
     const [language, setLanguage] = useState<string>(defaultLanguage);
+    const [pageSize, setPageSize] = useState<number>(defaultPageSize);
+    const [pageId, setPageId] = useState<number>(defaultPageId);
+    const [selectCounter, setSelectCounter] = useState<number>(0);
     const navigate = useNavigate();
 
     function handleSubmit(e: any) {
         e.preventDefault();
 
         let url: string = '/submissions?';
-        url += 'user=' + (userId ? encodeURIComponent(userId) : '');
-        url += '&problem=' + (problemId ? encodeURIComponent(problemId) : '');
-        url += '&language=' + (language ? encodeURIComponent(language) : '');
-        url += '&page=0';
-        url += '&size=50';
+        url += 'user=' + encodeURIComponent(userId);
+        url += '&problem=' + encodeURIComponent(problemId);
+        url += '&language=' + encodeURIComponent(language);
+        url += '&page=' + String(pageId);
+        url += '&size=' + String(pageSize);
         console.log(url);
         navigate(url);
     }
@@ -68,6 +73,22 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
         navigate('/');
     }
 
+    useEffect(
+        () => {
+            if (selectCounter == 0) {
+                return;
+            }
+            let url: string = '/submissions?';
+            url += 'user=' + encodeURIComponent(userId);
+            url += '&problem=' + encodeURIComponent(problemId);
+            url += '&language=' + encodeURIComponent(language);
+            url += '&page=' + String(pageId);
+            url += '&size=' + String(pageSize);
+            console.log(url);
+            navigate(url);
+        }, [selectCounter]
+    );
+
     return (
         <Navbar className='bg-body-secondary'>
             <Form className='form-inline margin-box'>
@@ -76,7 +97,7 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
                         type='text'
                         placeholder='User ID'
                         value={userId}
-                        onChange={(e) => setUserId(e.target.value)}
+                        onChange={(e) => { setUserId(e.target.value); setPageId(0); }}
                         onKeyDown={(e) => handleKeyPress(e)}
                     />
                 </InputGroup>
@@ -117,23 +138,41 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
                 type='submit'
                 onClick={(e) => handleReset(e)}
             >Reset</Button>
+
+            <Form className='margin-box'>
+                <InputGroup>
+                    <InputGroup.Text id="basic-addon1"># per page</InputGroup.Text>
+                    <Form.Select
+                        className='margin-box' style={{ width: '80px' }}
+                        value={String(pageSize)}
+                        onChange={
+                            (e) => {
+                                setPageSize(Number(e.target.value));
+                                setPageId(0);
+                                setSelectCounter(selectCounter + 1);
+                            }
+                        }
+                    >
+                        <option value='10'>10</option>
+                        <option value='20'>20</option>
+                        <option value='50'>50</option>
+                        <option value='100'>100</option>
+                    </Form.Select>
+                </InputGroup>
+            </Form>
         </Navbar >
     );
 }
 
-function PageMover({ defaultPageSize, defaultPageId }: {
-    defaultPageSize: number;
-    defaultPageId: number;
-}) {
-    const [pageSize, setPageSize] = useState<number>(defaultPageSize);
-    const [pageId, setPageId] = useState<number>(defaultPageId);
-
+function PageMover() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
 
     const userId = searchParams.get('user');
     const problemId = searchParams.get('problem');
     const language = searchParams.get('language');
+    const pageSize = searchParams.get('size');
+    const pageId = searchParams.get('page');
     const navigate = useNavigate();
 
     const [hoverLeft, setHoverLeft] = useState<boolean>(false);
@@ -142,25 +181,20 @@ function PageMover({ defaultPageSize, defaultPageId }: {
     function handleClick(e: any, delta: number) {
         e.preventDefault();
 
-        let nextPageId: number = pageId + delta;
+        let nextPageId: number = (pageId === null ? 0 : Number(pageId)) + delta;
         if (nextPageId < 0) {
             nextPageId = 0;
         }
-        setPageId(nextPageId);
-    }
 
-    useEffect(
-        () => {
-            let url: string = '/submissions?';
-            url += 'user=' + (userId ? encodeURIComponent(userId) : '');
-            url += '&problem=' + (problemId ? encodeURIComponent(problemId) : '');
-            url += '&language=' + (language ? encodeURIComponent(language) : '');
-            url += '&page=' + String(pageId);
-            url += '&size=' + String(pageSize);
-            console.log(url);
-            navigate(url);
-        }, [pageSize, pageId]
-    )
+        let url: string = '/submissions?';
+        url += 'user=' + (userId === null ? '' : encodeURIComponent(userId));
+        url += '&problem=' + (problemId === null ? '' : encodeURIComponent(problemId));
+        url += '&language=' + (language === null ? '' : encodeURIComponent(language));
+        url += '&page=' + String(nextPageId);
+        url += '&size=' + (pageSize === null ? '' : encodeURIComponent(pageSize));
+        console.log(url);
+        navigate(url);
+    }
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -239,7 +273,8 @@ function FindSubmissions() {
                 body: JSON.stringify(dataToSend)
             }).then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    console.error('Network response was not ok');
+                    return null;
                 }
                 return response.json();
             }).then(data => {
@@ -251,7 +286,7 @@ function FindSubmissions() {
         }, [userId, problemId, language, pageSize, pageId]
     );
 
-    if (!submissions) {
+    if (submissions === null) {
         return null;
     }
 
@@ -312,6 +347,8 @@ function Default() {
                 defaultUserId={''}
                 defaultProblemId={''}
                 defaultLanguage={''}
+                defaultPageSize={20}
+                defaultPageId={0}
             />
         </div>
     );
@@ -327,26 +364,24 @@ function Result() {
     const pageSize = searchParams.get('size');
     const pageId = searchParams.get('page');
 
+    console.log(pageId)
+
     return (
         <div>
             <div style={{ position: 'sticky', top: 0 }}>
                 <HeadNavigator />
                 <QueryForm
-                    defaultUserId={userId === null ? '' : userId === '*' ? '' : userId}
-                    defaultProblemId={problemId === null ? '' : problemId === '*' ? '' : problemId}
-                    defaultLanguage={language === null ? '' : language === '*' ? '' : language}
+                    defaultUserId={userId === null ? '' : userId}
+                    defaultProblemId={problemId === null ? '' : problemId}
+                    defaultLanguage={language === null ? '' : language}
+                    defaultPageSize={pageSize === null ? 20 : Number(pageSize)}
+                    defaultPageId={pageId === null ? 0 : Number(pageId)}
                 />
             </div>
             <div>
-                <PageMover
-                    defaultPageSize={pageSize === null ? 0 : Number(pageSize)}
-                    defaultPageId={pageId === null ? 50 : Number(pageId)}
-                />
+                <PageMover />
                 <FindSubmissions />
-                {/* <PageMover
-                    defaultPageSize={pageSize === null ? 0 : Number(pageSize)}
-                    defaultPageId={pageId === null ? 50 : Number(pageId)}
-                /> */}
+                <PageMover />
             </div>
         </div>
     );
