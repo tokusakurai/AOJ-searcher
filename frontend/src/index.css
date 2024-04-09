@@ -23,6 +23,11 @@
     width: 70px;
 }
 
+.icon {
+    font-size: 40px;
+    margin: 10px;
+}
+
 .table.fixed {
     width: 90%;
     margin: auto;

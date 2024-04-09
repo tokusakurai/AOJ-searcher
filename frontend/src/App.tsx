@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { Badge, Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
+import { IconContext } from 'react-icons';
+import { SlArrowLeftCircle, SlArrowRightCircle } from "react-icons/sl";
 import "bootstrap/dist/css/bootstrap.css";
 
 interface Status {
@@ -45,11 +47,11 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
         e.preventDefault();
 
         let url: string = '/submissions?';
-        url += 'user=' + (userId ? userId : '*');
-        url += '&problem=' + (problemId ? problemId : '*');
-        url += '&language=' + (language ? language : '*');
+        url += 'user=' + (userId ? encodeURIComponent(userId) : '');
+        url += '&problem=' + (problemId ? encodeURIComponent(problemId) : '');
+        url += '&language=' + (language ? encodeURIComponent(language) : '');
         url += '&page=0';
-        url += '&size=100';
+        url += '&size=50';
         console.log(url);
         navigate(url);
     }
@@ -66,7 +68,7 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
     }
 
     return (
-        <Navbar className='bg-body-tertiary'>
+        <Navbar className='bg-body-secondary'>
             <Form className='form-inline margin-box'>
                 <InputGroup>
                     <Form.Control
@@ -106,15 +108,100 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage }: {
                 variant='primary'
                 type='submit'
                 onClick={(e) => handleSubmit(e)}
-            >Search!</Button>
+            >Search</Button>
 
             <Button
                 className='margin-box'
-                variant='Light'
-                type='reset'
+                variant='light'
+                type='submit'
                 onClick={(e) => handleReset(e)}
             >Reset</Button>
         </Navbar >
+    );
+}
+
+function PageMover({ defaultPageSize, defaultPageId }: {
+    defaultPageSize: number;
+    defaultPageId: number;
+}) {
+    const [pageSize, setPageSize] = useState<number>(defaultPageSize);
+    const [pageId, setPageId] = useState<number>(defaultPageId);
+
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+
+    const userId = searchParams.get('user');
+    const problemId = searchParams.get('problem');
+    const language = searchParams.get('language');
+    const navigate = useNavigate();
+
+    const [hoverLeft, setHoverLeft] = useState<boolean>(false);
+    const [hoverRight, setHoverRight] = useState<boolean>(false);
+
+    function handleClick(e: any, delta: number) {
+        e.preventDefault();
+
+        let nextPageId: number = pageId + delta;
+        if (nextPageId < 0) {
+            nextPageId = 0;
+        }
+        setPageId(nextPageId);
+    }
+
+    useEffect(
+        () => {
+            let url: string = '/submissions?';
+            url += 'user=' + (userId ? encodeURIComponent(userId) : '');
+            url += '&problem=' + (problemId ? encodeURIComponent(problemId) : '');
+            url += '&language=' + (language ? encodeURIComponent(language) : '');
+            url += '&page=' + String(pageId);
+            url += '&size=' + String(pageSize);
+            console.log(url);
+            navigate(url);
+        }, [pageSize, pageId]
+    )
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            {
+                hoverLeft ?
+                    <IconContext.Provider value={{ style: { color: '#aaa' } }}>
+                        <SlArrowLeftCircle
+                            onClick={(e) => handleClick(e, -1)}
+                            onMouseLeave={() => setHoverLeft(false)}
+                            onMouseEnter={() => setHoverLeft(true)}
+                            className='icon'
+                        ></SlArrowLeftCircle>
+                    </IconContext.Provider> :
+                    <IconContext.Provider value={{ style: { color: '#000' } }}>
+                        <SlArrowLeftCircle
+                            onClick={(e) => handleClick(e, -1)}
+                            onMouseLeave={() => setHoverLeft(false)}
+                            onMouseEnter={() => setHoverLeft(true)}
+                            className='icon'
+                        ></SlArrowLeftCircle>
+                    </IconContext.Provider>
+            }
+            {
+                hoverRight ?
+                    <IconContext.Provider value={{ style: { color: '#aaa' } }}>
+                        <SlArrowRightCircle
+                            onClick={(e) => handleClick(e, 1)}
+                            onMouseLeave={() => setHoverRight(false)}
+                            onMouseEnter={() => setHoverRight(true)}
+                            className='icon'
+                        ></SlArrowRightCircle>
+                    </IconContext.Provider> :
+                    <IconContext.Provider value={{ style: { color: '#000' } }}>
+                        <SlArrowRightCircle
+                            onClick={(e) => handleClick(e, 1)}
+                            onMouseLeave={() => setHoverRight(false)}
+                            onMouseEnter={() => setHoverRight(true)}
+                            className='icon'
+                        ></SlArrowRightCircle>
+                    </IconContext.Provider>
+            }
+        </div>
     );
 }
 
@@ -134,11 +221,11 @@ function FindSubmissions() {
         () => {
             const url: string = 'http://localhost:8000/submissions';
             const dataToSend: Status = {
-                UserId: userId === null ? '*' : userId === '*' ? '' : userId,
-                ProblemId: problemId === null ? '' : problemId === '*' ? '' : problemId,
-                Language: language === null ? '' : language === '*' ? '' : language,
-                PageSize: pageSize === null ? 100 : Number(pageSize),
-                PageId: pageId === null ? 0 : Number(pageId),
+                UserId: userId === null ? '' : decodeURIComponent(userId),
+                ProblemId: problemId === null ? '' : decodeURIComponent(problemId),
+                Language: language === null ? '' : decodeURIComponent(language),
+                PageSize: pageSize === null ? 100 : Number(decodeURIComponent(pageSize)),
+                PageId: pageId === null ? 0 : Number(decodeURIComponent(pageId)),
             };
 
             console.log(dataToSend);
@@ -236,6 +323,8 @@ function Result() {
     const userId = searchParams.get('user');
     const problemId = searchParams.get('problem');
     const language = searchParams.get('language');
+    const pageSize = searchParams.get('size');
+    const pageId = searchParams.get('page');
 
     return (
         <div>
@@ -248,7 +337,15 @@ function Result() {
                 />
             </div>
             <div>
+                <PageMover
+                    defaultPageSize={pageSize === null ? 0 : Number(pageSize)}
+                    defaultPageId={pageId === null ? 50 : Number(pageId)}
+                />
                 <FindSubmissions />
+                {/* <PageMover
+                    defaultPageSize={pageSize === null ? 0 : Number(pageSize)}
+                    defaultPageId={pageId === null ? 50 : Number(pageId)}
+                /> */}
             </div>
         </div>
     );
