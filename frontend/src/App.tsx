@@ -10,8 +10,8 @@ interface Status {
     UserId: string;
     ProblemId: string;
     Language: string;
-    PageSize: number;
     PageId: number;
+    PageSize: number;
 }
 
 interface Submission {
@@ -26,6 +26,38 @@ interface Submission {
     Rank: number;
 }
 
+function getDefaultStatus(): Status {
+    return {
+        UserId: '',
+        ProblemId: '',
+        Language: '',
+        PageId: 0,
+        PageSize: 20,
+    };
+}
+
+function getURLFromStatus(status: Status): string {
+    let url: string = '/submissions?';
+    url += 'user=' + encodeURIComponent(status.UserId);
+    url += '&problem=' + encodeURIComponent(status.ProblemId);
+    url += '&language=' + encodeURIComponent(status.Language);
+    url += '&page=' + String(status.PageId);
+    url += '&size=' + String(status.PageSize);
+    console.log(url);
+    return url;
+}
+
+function getStatusFromURL(searchParams: URLSearchParams): Status {
+    const defaultStatus: Status = getDefaultStatus();
+    return {
+        UserId: searchParams.get('user') || defaultStatus.UserId,
+        ProblemId: searchParams.get('problem') || defaultStatus.ProblemId,
+        Language: searchParams.get('language') || defaultStatus.Language,
+        PageId: Number(searchParams.get('page')) || defaultStatus.PageId,
+        PageSize: Number(searchParams.get('size')) || defaultStatus.PageSize,
+    }
+}
+
 function HeadNavigator() {
     return (
         <Navbar style={{ backgroundColor: '#0a0a3c' }}>
@@ -34,32 +66,16 @@ function HeadNavigator() {
     );
 }
 
-function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPageSize, defaultPageId }: {
-    defaultUserId: string;
-    defaultProblemId: string;
-    defaultLanguage: string;
-    defaultPageSize: number;
-    defaultPageId: number;
+function QueryForm({ currentStatus }: {
+    currentStatus: Status;
 }) {
-    const [userId, setUserId] = useState<string>(defaultUserId);
-    const [problemId, setProblemId] = useState<string>(defaultProblemId);
-    const [language, setLanguage] = useState<string>(defaultLanguage);
-    const [pageSize, setPageSize] = useState<number>(defaultPageSize);
-    const [pageId, setPageId] = useState<number>(defaultPageId);
+    const [status, setStatus] = useState<Status>(currentStatus);
     const [selectCounter, setSelectCounter] = useState<number>(0);
     const navigate = useNavigate();
 
     function handleSubmit(e: any) {
         e.preventDefault();
-
-        let url: string = '/submissions?';
-        url += 'user=' + encodeURIComponent(userId);
-        url += '&problem=' + encodeURIComponent(problemId);
-        url += '&language=' + encodeURIComponent(language);
-        url += '&page=' + String(pageId);
-        url += '&size=' + String(pageSize);
-        console.log(url);
-        navigate(url);
+        navigate(getURLFromStatus(status));
     }
 
     function handleKeyPress(e: any) {
@@ -75,18 +91,11 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
 
     useEffect(
         () => {
-            if (selectCounter == 0) {
+            if (selectCounter === 0) {
                 return;
             }
-            let url: string = '/submissions?';
-            url += 'user=' + encodeURIComponent(userId);
-            url += '&problem=' + encodeURIComponent(problemId);
-            url += '&language=' + encodeURIComponent(language);
-            url += '&page=' + String(pageId);
-            url += '&size=' + String(pageSize);
-            console.log(url);
-            navigate(url);
-        }, [selectCounter]
+            navigate(getURLFromStatus(status));
+        }, [selectCounter, navigate]
     );
 
     return (
@@ -96,8 +105,13 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
                     <Form.Control
                         type='text'
                         placeholder='User ID'
-                        value={userId}
-                        onChange={(e) => { setUserId(e.target.value); setPageId(0); }}
+                        value={status.UserId}
+                        onChange={(e) => {
+                            setStatus({
+                                ...status,
+                                UserId: e.target.value,
+                            });
+                        }}
                         onKeyDown={(e) => handleKeyPress(e)}
                     />
                 </InputGroup>
@@ -107,8 +121,13 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
                     <Form.Control
                         type='text'
                         placeholder='Problem ID'
-                        value={problemId}
-                        onChange={(e) => setProblemId(e.target.value)}
+                        value={status.ProblemId}
+                        onChange={(e) => {
+                            setStatus({
+                                ...status,
+                                ProblemId: e.target.value,
+                            });
+                        }}
                         onKeyDown={(e) => handleKeyPress(e)}
                     />
                 </InputGroup>
@@ -118,8 +137,13 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
                     <Form.Control
                         type='text'
                         placeholder='Language'
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
+                        value={status.Language}
+                        onChange={(e) => {
+                            setStatus({
+                                ...status,
+                                Language: e.target.value,
+                            });
+                        }}
                         onKeyDown={(e) => handleKeyPress(e)}
                     />
                 </InputGroup>
@@ -144,11 +168,14 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
                     <InputGroup.Text id="basic-addon1"># per page</InputGroup.Text>
                     <Form.Select
                         className='margin-box' style={{ width: '80px' }}
-                        value={String(pageSize)}
+                        value={String(status.PageSize)}
                         onChange={
                             (e) => {
-                                setPageSize(Number(e.target.value));
-                                setPageId(0);
+                                setStatus({
+                                    ...status,
+                                    PageId: 0,
+                                    PageSize: 0,
+                                });
                                 setSelectCounter(selectCounter + 1);
                             }
                         }
@@ -167,12 +194,7 @@ function QueryForm({ defaultUserId, defaultProblemId, defaultLanguage, defaultPa
 function PageMover() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-
-    const userId = searchParams.get('user');
-    const problemId = searchParams.get('problem');
-    const language = searchParams.get('language');
-    const pageSize = searchParams.get('size');
-    const pageId = searchParams.get('page');
+    const status: Status = getStatusFromURL(searchParams);
     const navigate = useNavigate();
 
     const [hoverLeft, setHoverLeft] = useState<boolean>(false);
@@ -181,18 +203,19 @@ function PageMover() {
     function handleClick(e: any, delta: number) {
         e.preventDefault();
 
-        let nextPageId: number = (pageId === null ? 0 : Number(pageId)) + delta;
+        let nextPageId: number = status.PageId + delta;
         if (nextPageId < 0) {
             nextPageId = 0;
         }
 
-        let url: string = '/submissions?';
-        url += 'user=' + (userId === null ? '' : encodeURIComponent(userId));
-        url += '&problem=' + (problemId === null ? '' : encodeURIComponent(problemId));
-        url += '&language=' + (language === null ? '' : encodeURIComponent(language));
-        url += '&page=' + String(nextPageId);
-        url += '&size=' + (pageSize === null ? '' : encodeURIComponent(pageSize));
-        console.log(url);
+        const tmpStatus: Status = {
+            UserId: status.UserId,
+            ProblemId: status.ProblemId,
+            Language: status.Language,
+            PageId: nextPageId,
+            PageSize: status.PageSize,
+        }
+        const url: string = getURLFromStatus(tmpStatus);
         navigate(url);
     }
 
@@ -240,37 +263,41 @@ function PageMover() {
     );
 }
 
+function TableHead() {
+    return (
+        <thead>
+            <tr>
+                <th style={{ width: '20px', textAlign: 'center' }}>#</th>
+                <th style={{ width: '170px', textAlign: 'center' }}>Submission Time</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>Problem ID</th>
+                <th style={{ width: '150px', textAlign: 'center' }}>User ID</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>Language</th>
+                <th style={{ width: '20px', textAlign: 'center' }}>Verdict</th>
+                <th style={{ width: '100px', textAlign: 'center' }}>CPU Time</th>
+                <th style={{ width: '100px', textAlign: 'center' }}>Memory</th>
+                <th style={{ width: '100px', textAlign: 'center' }}>Link</th>
+            </tr>
+        </thead>
+    );
+}
+
 function FindSubmissions() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-
-    const userId = searchParams.get('user');
-    const problemId = searchParams.get('problem');
-    const language = searchParams.get('language');
-    const pageSize = searchParams.get('size');
-    const pageId = searchParams.get('page');
-
+    const status: Status = getStatusFromURL(searchParams);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
 
     useEffect(
         () => {
             const url: string = 'http://localhost:8000/submissions';
-            const dataToSend: Status = {
-                UserId: userId === null ? '' : decodeURIComponent(userId),
-                ProblemId: problemId === null ? '' : decodeURIComponent(problemId),
-                Language: language === null ? '' : decodeURIComponent(language),
-                PageSize: pageSize === null ? 100 : Number(decodeURIComponent(pageSize)),
-                PageId: pageId === null ? 0 : Number(decodeURIComponent(pageId)),
-            };
-
-            console.log(dataToSend);
+            console.log(status);
 
             fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(dataToSend)
+                body: JSON.stringify(status)
             }).then(response => {
                 if (!response.ok) {
                     console.error('Network response was not ok');
@@ -283,28 +310,20 @@ function FindSubmissions() {
             }).catch(error => {
                 console.error('Error:', error);
             });
-        }, [userId, problemId, language, pageSize, pageId]
+        }, [status.UserId, status.ProblemId, status.Language, status.PageId, status.PageSize]
     );
 
     if (submissions === null) {
-        return null;
+        return (
+            <Table striped bordered hover responsive className='table fixed'>
+                <TableHead />
+            </Table>
+        )
     }
 
     return (
         <Table striped bordered hover responsive className='table fixed'>
-            <thead>
-                <tr>
-                    <th style={{ width: '20px', textAlign: 'center' }}>#</th>
-                    <th style={{ width: '170px', textAlign: 'center' }}>Submission Time</th>
-                    <th style={{ width: '120px', textAlign: 'center' }}>Problem ID</th>
-                    <th style={{ width: '150px', textAlign: 'center' }}>User ID</th>
-                    <th style={{ width: '120px', textAlign: 'center' }}>Language</th>
-                    <th style={{ width: '20px', textAlign: 'center' }}>Verdict</th>
-                    <th style={{ width: '100px', textAlign: 'center' }}>CPU Time</th>
-                    <th style={{ width: '100px', textAlign: 'center' }}>Memory</th>
-                    <th style={{ width: '100px', textAlign: 'center' }}>Link</th>
-                </tr>
-            </thead>
+            <TableHead />
             <tbody>
                 {submissions.map((item: Submission, index: number) => (
                     <tr key={index}>
@@ -344,11 +363,7 @@ function Default() {
         <div style={{ position: 'sticky', top: 0 }}>
             <HeadNavigator />
             <QueryForm
-                defaultUserId={''}
-                defaultProblemId={''}
-                defaultLanguage={''}
-                defaultPageSize={20}
-                defaultPageId={0}
+                currentStatus={getDefaultStatus()}
             />
         </div>
     );
@@ -357,25 +372,14 @@ function Default() {
 function Result() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-
-    const userId = searchParams.get('user');
-    const problemId = searchParams.get('problem');
-    const language = searchParams.get('language');
-    const pageSize = searchParams.get('size');
-    const pageId = searchParams.get('page');
-
-    console.log(pageId)
+    const status: Status = getStatusFromURL(searchParams);
 
     return (
         <div>
             <div style={{ position: 'sticky', top: 0 }}>
                 <HeadNavigator />
                 <QueryForm
-                    defaultUserId={userId === null ? '' : userId}
-                    defaultProblemId={problemId === null ? '' : problemId}
-                    defaultLanguage={language === null ? '' : language}
-                    defaultPageSize={pageSize === null ? 20 : Number(pageSize)}
-                    defaultPageId={pageId === null ? 0 : Number(pageId)}
+                    currentStatus={status}
                 />
             </div>
             <div>
@@ -387,7 +391,7 @@ function Result() {
     );
 }
 
-export default function App() {
+function App() {
     return (
         <BrowserRouter>
             <Routes>
@@ -407,3 +411,5 @@ export default function App() {
         </BrowserRouter>
     );
 }
+
+export default App;
