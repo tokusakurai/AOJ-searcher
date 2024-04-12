@@ -111,6 +111,7 @@ function QueryForm() {
                             setStatus({
                                 ...status,
                                 UserId: e.target.value,
+                                PageId: 0,
                             });
                         }}
                         onKeyDown={(e) => handleKeyPress(e)}
@@ -127,6 +128,7 @@ function QueryForm() {
                             setStatus({
                                 ...status,
                                 ProblemId: e.target.value,
+                                PageId: 0,
                             });
                         }}
                         onKeyDown={(e) => handleKeyPress(e)}
@@ -143,6 +145,7 @@ function QueryForm() {
                             setStatus({
                                 ...status,
                                 Language: e.target.value,
+                                PageId: 0,
                             });
                         }}
                         onKeyDown={(e) => handleKeyPress(e)}
@@ -255,15 +258,15 @@ function TableHead() {
     return (
         <thead>
             <tr>
-                <th style={{ width: '20px', textAlign: 'center' }}>#</th>
+                <th style={{ width: '70px', textAlign: 'center' }}>#</th>
                 <th style={{ width: '170px', textAlign: 'center' }}>Submission Time</th>
                 <th style={{ width: '120px', textAlign: 'center' }}>Problem ID</th>
-                <th style={{ width: '150px', textAlign: 'center' }}>User ID</th>
+                <th style={{ width: '180px', textAlign: 'center' }}>User ID</th>
                 <th style={{ width: '120px', textAlign: 'center' }}>Language</th>
-                <th style={{ width: '20px', textAlign: 'center' }}>Verdict</th>
+                <th style={{ width: '70px', textAlign: 'center' }}>Verdict</th>
                 <th style={{ width: '100px', textAlign: 'center' }}>CPU Time</th>
                 <th style={{ width: '100px', textAlign: 'center' }}>Memory</th>
-                <th style={{ width: '100px', textAlign: 'center' }}>Link</th>
+                <th style={{ width: '120px', textAlign: 'center' }}>Link</th>
             </tr>
         </thead>
     );

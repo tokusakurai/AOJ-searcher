@@ -29,8 +29,9 @@
 }
 
 .table.fixed {
-    width: 90%;
+    width: 1050px;
     margin: auto;
+    table-layout: fixed;
 }
 
 body {
