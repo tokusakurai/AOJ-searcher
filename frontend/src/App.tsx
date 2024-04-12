@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BrowserRouter } from 'react-router-dom';
 import { Badge, Button, Form, InputGroup, Navbar, Table } from 'react-bootstrap';
@@ -66,11 +66,11 @@ function HeadNavigator() {
     );
 }
 
-function QueryForm({ currentStatus }: {
-    currentStatus: Status;
-}) {
+function QueryForm() {
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search)
+    const currentStatus: Status = getStatusFromURL(searchParams);
     const [status, setStatus] = useState<Status>(currentStatus);
-    const [selectCounter, setSelectCounter] = useState<number>(0);
     const navigate = useNavigate();
 
     function handleSubmit(e: any) {
@@ -89,14 +89,15 @@ function QueryForm({ currentStatus }: {
         navigate('/');
     }
 
-    useEffect(
-        () => {
-            if (selectCounter === 0) {
-                return;
-            }
-            navigate(getURLFromStatus(status));
-        }, [selectCounter, navigate]
-    );
+    function handleSelect(e: any) {
+        const tmpStatus: Status = {
+            ...status,
+            PageId: 0,
+            PageSize: Number(e.target.value),
+        }
+        setStatus(tmpStatus);
+        navigate(getURLFromStatus(tmpStatus));
+    }
 
     return (
         <Navbar className='bg-body-secondary'>
@@ -169,16 +170,7 @@ function QueryForm({ currentStatus }: {
                     <Form.Select
                         className='margin-box' style={{ width: '80px' }}
                         value={String(status.PageSize)}
-                        onChange={
-                            (e) => {
-                                setStatus({
-                                    ...status,
-                                    PageId: 0,
-                                    PageSize: 0,
-                                });
-                                setSelectCounter(selectCounter + 1);
-                            }
-                        }
+                        onChange={(e) => handleSelect(e)}
                     >
                         <option value='10'>10</option>
                         <option value='20'>20</option>
@@ -193,7 +185,7 @@ function QueryForm({ currentStatus }: {
 
 function PageMover() {
     const location = useLocation();
-    const searchParams = new URLSearchParams(location.search);
+    const searchParams = new URLSearchParams(location.search)
     const status: Status = getStatusFromURL(searchParams);
     const navigate = useNavigate();
 
@@ -209,14 +201,10 @@ function PageMover() {
         }
 
         const tmpStatus: Status = {
-            UserId: status.UserId,
-            ProblemId: status.ProblemId,
-            Language: status.Language,
+            ...status,
             PageId: nextPageId,
-            PageSize: status.PageSize,
         }
-        const url: string = getURLFromStatus(tmpStatus);
-        navigate(url);
+        navigate(getURLFromStatus(tmpStatus));
     }
 
     return (
@@ -283,8 +271,12 @@ function TableHead() {
 
 function FindSubmissions() {
     const location = useLocation();
-    const searchParams = new URLSearchParams(location.search);
-    const status: Status = getStatusFromURL(searchParams);
+    const searchParams = useMemo(() => {
+        return new URLSearchParams(location.search)
+    }, [location]);
+    const status: Status = useMemo(() => {
+        return getStatusFromURL(searchParams);
+    }, [searchParams]);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
 
     useEffect(
@@ -310,7 +302,7 @@ function FindSubmissions() {
             }).catch(error => {
                 console.error('Error:', error);
             });
-        }, [status.UserId, status.ProblemId, status.Language, status.PageId, status.PageSize]
+        }, [status]
     );
 
     if (submissions === null) {
@@ -362,25 +354,17 @@ function Default() {
     return (
         <div style={{ position: 'sticky', top: 0 }}>
             <HeadNavigator />
-            <QueryForm
-                currentStatus={getDefaultStatus()}
-            />
+            <QueryForm />
         </div>
     );
 }
 
 function Result() {
-    const location = useLocation();
-    const searchParams = new URLSearchParams(location.search);
-    const status: Status = getStatusFromURL(searchParams);
-
     return (
         <div>
             <div style={{ position: 'sticky', top: 0 }}>
                 <HeadNavigator />
-                <QueryForm
-                    currentStatus={status}
-                />
+                <QueryForm />
             </div>
             <div>
                 <PageMover />
