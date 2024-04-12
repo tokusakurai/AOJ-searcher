@@ -20,8 +20,8 @@ type Status struct {
     UserId    string
     ProblemId string
     Language  string
-    PageSize  int
     PageId    int
+    PageSize  int
 }
 
 type Submission struct {
@@ -58,20 +58,20 @@ func getSubmissionFromMap(mapSubmission map[string]interface{}) Submission {
 
 func insertSubmission(db *sql.DB, submission Submission) (sql.Result, error) {
     insertSubmissionQuery :=
-        `INSERT INTO SUBMISSIONS(
-            JUDGEID,
-            USERID,
-            PROBLEMID,
-            LANGUAGE,
-            VERSION,
-            SUBMISSIONTIME,
-            CPUTIME,
-            MEMORY
+        `INSERT INTO submissions(
+            judge_id,
+            user_id,
+            problem_id,
+            language,
+            version,
+            submission_time,
+            cpu_time,
+            memory
         )
         VALUES(
             ?, ?, ?, ?, ?, ?, ?, ?
         )
-        ON DUPLICATE KEY UPDATE JUDGEID = JUDGEID`
+        ON DUPLICATE KEY UPDATE judge_id = judge_id`
 
     return db.Exec(
         insertSubmissionQuery,
@@ -95,21 +95,21 @@ func searchSubmission(db *sql.DB, status Status) (*sql.Rows, error) {
                 *,
                 RANK() OVER (
                     ORDER BY
-                        SUBMISSIONTIME DESC,
-                        USERID ASC,
-                        PROBLEMID ASC
-                ) AS RNK
-            FROM SUBMISSIONS
+                        submission_time DESC,
+                        user_id ASC,
+                        problem_id ASC
+                ) AS submission_rank
+            FROM submissions
             WHERE
                 1 = 1
-                {{if .UserId}} AND USERID = ? {{end}}
-                {{if .ProblemId}} AND PROBLEMID = ? {{end}}
-                {{if .Language}} AND LANGUAGE = ? {{end}}
-        ) AS RANKED_SUBMISSIONS
+                {{if .UserId}} AND user_id = ? {{end}}
+                {{if .ProblemId}} AND problem_id = ? {{end}}
+                {{if .Language}} AND language = ? {{end}}
+        ) AS ranked_submissions
         WHERE
-            RNK BETWEEN ? AND ?
+            submission_rank BETWEEN ? AND ?
         ORDER BY
-            RNK ASC`
+            submission_rank ASC`
 
     var buf bytes.Buffer
     err := template.Must(template.New("tmpl").Parse(searchSubmissionQuery)).Execute(&buf, status)
@@ -219,6 +219,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     }
 
     for _, submission := range data {
+        log.Print(submission)
         _, err = insertSubmission(db, getSubmissionFromMap(submission))
         if err != nil {
             log.Print("Error using database: ", err)
